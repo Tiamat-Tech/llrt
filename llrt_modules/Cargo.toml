@@ -1,17 +1,37 @@
 [package]
 name = "llrt_modules"
+description = "LLRT Modules for rquickjs"
 version = "0.1.15-beta"
 edition = "2021"
-license-file = "LICENSE"
+license = "Apache-2.0"
+repository = "https://github.com/awslabs/llrt"
+readme = "README.md"
 
 [features]
 default = ["all"]
-all = ["buffer", "fs", "os", "path", "process"]
+all = [
+  "buffer",
+  "child-process",
+  "events",
+  "exceptions",
+  "fs",
+  "navigator",
+  "net",
+  "os",
+  "path",
+  "perf-hooks",
+  "process",
+  "zlib",
+]
 
 buffer = ["llrt_utils/encoding"]
+child-process = ["events", "__stream", "itoa"]
+events = []
+exceptions = []
 fs = ["tokio/fs", "llrt_utils/fs", "ring", "buffer", "path"]
+navigator = []
+net = ["events", "__stream"]
 os = [
-  "process",
   "libc",
   "windows-result",
   "windows-registry",
@@ -20,18 +40,32 @@ os = [
 ]
 path = []
 process = []
+perf-hooks = []
+zlib = ["flate2", "brotlic"]
+
+__bytearray-buffer = ["tokio/sync"]
+__stream = ["buffer", "__bytearray-buffer"]
 
 [dependencies]
 either = "1"
+itoa = { version = "1", optional = true }
 once_cell = { version = "1", optional = true }
-llrt_utils = { path = "../llrt_utils", default-features = false }
+llrt_utils = { version = "0.1.15-beta", path = "../llrt_utils", default-features = false, features = [
+  "ctx",
+] }
 rquickjs = { version = "0.6", features = [
+  "array-buffer",
   "either",
   "macro",
   "futures",
 ], default-features = false }
 ring = { version = "0.17", optional = true }
 tokio = { version = "1", features = ["rt", "io-util"] }
+tracing = "0.1"
+flate2 = { version = "1.0.30", features = [
+  "zlib-ng",
+], default-features = false, optional = true }
+brotlic = { version = "0.8.2", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2", optional = true }
@@ -43,4 +77,5 @@ windows-version = { version = "0.1", optional = true }
 
 [dev-dependencies]
 nanoid = "0.4.0"
+rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }

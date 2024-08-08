@@ -2595,17 +2595,13 @@ dependencies = [
  "phf_codegen",
  "quick-xml",
  "rand",
- "relative-path",
  "ring",
  "rquickjs",
  "rustls",
  "rustls-pemfile",
  "ryu",
  "simd-json",
- "socket2",
  "tokio",
- "tokio-context",
- "tokio-rustls",
  "tracing",
  "tracing-core",
  "url",
@@ -2621,14 +2617,19 @@ dependencies = [
 name = "llrt_modules"
 version = "0.1.15-beta"
 dependencies = [
+ "brotlic",
  "either",
+ "flate2",
+ "itoa",
  "libc",
  "llrt_utils",
  "nanoid",
  "once_cell",
+ "rand",
  "ring",
  "rquickjs",
  "tokio",
+ "tracing",
  "windows-registry",
  "windows-result",
  "windows-version",
@@ -2640,8 +2641,10 @@ version = "0.1.15-beta"
 dependencies = [
  "base64-simd",
  "hex-simd",
+ "phf",
  "rquickjs",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2991,6 +2994,7 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ade2d8b8f33c7333b51bcf0428d37e217e9f32192ae4772156f65063b8ce03dc"
 dependencies = [
+ "phf_macros",
  "phf_shared",
 ]
 
@@ -3012,6 +3016,19 @@ checksum = "48e4cc64c2ad9ebe670cb8fd69dd50ae301650392e81c05f9bfcb2d5bdbc24b0"
 dependencies = [
  "phf_shared",
  "rand",
+]
+
+[[package]]
+name = "phf_macros"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3444646e286606587e49f3bcf1679b8cef1dc2c5ecc29ddacaffc305180d464b"
+dependencies = [
+ "phf_generator",
+ "phf_shared",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 2.0.71",
 ]
 
 [[package]]
@@ -3995,15 +4012,6 @@ dependencies = [
  "socket2",
  "tokio-macros",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "tokio-context"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaf0b8394dd5ca9a1b726c629390154c19222dfd7467a4b56f1ced90adee3958"
-dependencies = [
- "tokio",
 ]
 
 [[package]]

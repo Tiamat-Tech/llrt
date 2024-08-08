@@ -67,9 +67,11 @@ const ES_BUILD_OPTIONS = {
     "net",
     "util",
     "url",
+    "zlib",
     "llrt:hex",
     "llrt:uuid",
     "llrt:xml",
+    "perf_hooks",
   ],
 };
 
@@ -143,11 +145,11 @@ const ADDITIONAL_PACKAGES = [
 ];
 
 const REPLACEMENT_PACKAGES = {
-  "@aws-crypto/sha1-browser": "shims/aws-crypto-sha1.js",
-  "@aws-crypto/sha256-browser": "shims/aws-crypto-sha256.js",
-  "@aws-crypto/crc32": "shims/aws-crypto-crc32.js",
-  "@aws-crypto/crc32c": "shims/aws-crypto-crc32c.js",
-  "@smithy/abort-controller": "shims/smithy-abort-controller.js",
+  "@aws-crypto/sha1-browser": "shims/@aws-crypto/sha1-browser.js",
+  "@aws-crypto/sha256-browser": "shims/@aws-crypto/sha256-browser.js",
+  "@aws-crypto/crc32": "shims/@aws-crypto/crc32.js",
+  "@aws-crypto/crc32c": "shims/@aws-crypto/crc32c.js",
+  "@smithy/abort-controller": "shims/@smithy/abort-controller.js",
 };
 
 const SERVICE_ENDPOINT_BY_PACKAGE = {};
@@ -510,14 +512,15 @@ async function loadShims() {
   };
 
   await Promise.all([
-    loadShim(/@smithy\/util-hex-encoding/, "util-hex-encoding.js"),
-    loadShim(/@aws-sdk\/util-utf8-browser/, "util-utf8.js"),
-    loadShim(/@smithy\/util-base64/, "util-base64.js"),
-    loadShim(/@aws-crypto/, "aws-crypto.js"),
-    loadShim(/mnemonist\/lru-cache\.js/, "lru-cache.js"),
-    loadShim(/sdk-stream-mixin.browser\.js/, "sdk-stream-mixin.js"),
+    loadShim(/@aws-crypto/, "@aws-crypto/index.js"),
+    loadShim(/@smithy\/util-hex-encoding/, "@smithy/util-hex-encoding.js"),
+    loadShim(/@smithy\/util-utf8/, "@smithy/util-utf8.js"),
+    loadShim(/@smithy\/util-base64/, "@smithy/util-base64.js"),
+    loadShim(/mnemonist\/lru-cache\.js/, "mnemonist/lru-cache.js"),
     loadShim(/collect-stream-body\.js/, "collect-stream-body.js"),
+    loadShim(/sdk-stream-mixin.browser\.js/, "sdk-stream-mixin.js"),
     loadShim(/stream-collector\.js/, "stream-collector.js"),
+    loadShim(/splitStream.browser\.js/, "@smithy/split-stream.js"),
   ]);
 }
 
@@ -583,7 +586,8 @@ async function buildSdks() {
       entryPoints: sdkEntryPoints,
       plugins: [AWS_SDK_PLUGIN, esbuildShimPlugin([[/^bowser$/]])],
       alias: {
-        "@aws-sdk/util-utf8": "@aws-sdk/util-utf8-browser",
+        "@aws-sdk/util-utf8-browser": "@smithy/util-utf8",
+        "@aws-sdk/util-utf8": "@smithy/util-utf8",
         "@smithy/md5-js": "crypto",
         "fast-xml-parser": "llrt:xml",
         uuid: "llrt:uuid",

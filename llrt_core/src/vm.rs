@@ -12,28 +12,24 @@ use std::{
     pin::pin,
     process::exit,
     result::Result as StdResult,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
     task::Poll,
 };
 
 use once_cell::sync::Lazy;
 
-use chrono::Utc;
+pub use llrt_utils::{ctx::CtxExtension, error::ErrorExtensions};
 use ring::rand::SecureRandom;
 use rquickjs::{
     atom::PredefinedAtom,
     context::EvalOptions,
-    function::{Constructor, Opt},
+    function::Opt,
     loader::{BuiltinLoader, FileResolver, Loader, Resolver, ScriptLoader},
     module::Declared,
     prelude::{Func, Rest},
     qjs, AsyncContext, AsyncRuntime, CatchResultExt, CaughtError, Ctx, Error, Function, IntoJs,
-    Module, Object, Result, String as JsString, Value,
+    Module, Object, Result, Value,
 };
-use tokio::sync::oneshot::{self, Receiver};
 use tracing::trace;
 use zstd::{bulk::Decompressor, dict::DecoderDictionary};
 
@@ -51,15 +47,13 @@ use crate::{
     environment,
     json::{parse::json_parse, stringify::json_stringify_replacer_space},
     number::number_to_string,
+    security,
     utils::{
         clone::structured_clone,
         io::get_js_path,
         object::{get_bytes, ObjectExt},
     },
 };
-
-pub static TIME_ORIGIN: AtomicUsize = AtomicUsize::new(0);
-
 #[inline]
 pub fn uncompressed_size(input: &[u8]) -> StdResult<(usize, &[u8]), io::Error> {
     let size = input.get(..4).ok_or(io::ErrorKind::InvalidInput)?;
@@ -369,10 +363,8 @@ impl Vm {
     pub async fn from_options(
         vm_options: VmOptions,
     ) -> StdResult<Self, Box<dyn std::error::Error + Send + Sync>> {
-        if TIME_ORIGIN.load(Ordering::Relaxed) == 0 {
-            let time_origin = Utc::now().timestamp_nanos_opt().unwrap_or_default() as usize;
-            TIME_ORIGIN.store(time_origin, Ordering::Relaxed)
-        }
+        llrt_modules::time::init();
+        security::init();
 
         SYSTEM_RANDOM
             .fill(&mut [0; 8])
@@ -532,6 +524,10 @@ fn json_parse_string<'js>(ctx: Ctx<'js>, value: Value<'js>) -> Result<Value<'js>
 }
 
 fn init(ctx: &Ctx<'_>, module_names: HashSet<&'static str>) -> Result<()> {
+    llrt_utils::ctx::set_spawn_error_handler(|ctx, err| {
+        Vm::print_error_and_exit(ctx, err);
+    });
+
     let globals = ctx.globals();
 
     globals.set("__gc", Func::from(|ctx: Ctx| ctx.run_gc()))?;
@@ -727,71 +723,4 @@ fn set_import_meta(module: &Module<'_>, filepath: &str) -> Result<()> {
     let meta: Object = module.meta()?;
     meta.prop("url", ["file://", filepath].concat())?;
     Ok(())
-}
-
-pub trait ErrorExtensions<'js> {
-    fn into_value(self, ctx: &Ctx<'js>) -> Result<Value<'js>>;
-}
-
-impl<'js> ErrorExtensions<'js> for Error {
-    fn into_value(self, ctx: &Ctx<'js>) -> Result<Value<'js>> {
-        Err::<(), _>(self).catch(ctx).unwrap_err().into_value(ctx)
-    }
-}
-
-impl<'js> ErrorExtensions<'js> for CaughtError<'js> {
-    fn into_value(self, ctx: &Ctx<'js>) -> Result<Value<'js>> {
-        Ok(match self {
-            CaughtError::Error(err) => {
-                JsString::from_str(ctx.clone(), &err.to_string())?.into_value()
-            },
-            CaughtError::Exception(ex) => ex.into_value(),
-            CaughtError::Value(val) => val,
-        })
-    }
-}
-
-pub trait CtxExtension<'js> {
-    fn spawn_exit<F, R>(&self, future: F) -> Result<Receiver<R>>
-    where
-        F: Future<Output = Result<R>> + 'js,
-        R: 'js;
-}
-
-impl<'js> CtxExtension<'js> for Ctx<'js> {
-    fn spawn_exit<F, R>(&self, future: F) -> Result<Receiver<R>>
-    where
-        F: Future<Output = Result<R>> + 'js,
-        R: 'js,
-    {
-        let ctx = self.clone();
-
-        let type_error_ctor: Constructor = ctx.globals().get(PredefinedAtom::TypeError)?;
-        let type_error: Object = type_error_ctor.construct(())?;
-        let stack: Option<String> = type_error.get(PredefinedAtom::Stack).ok();
-
-        let (join_channel_tx, join_channel_rx) = oneshot::channel();
-
-        self.spawn(async move {
-            match future.await.catch(&ctx) {
-                Ok(res) => {
-                    //result here dosn't matter if receiver has dropped
-                    let _ = join_channel_tx.send(res);
-                },
-                Err(err) => {
-                    if let CaughtError::Exception(err) = err {
-                        if err.stack().is_none() {
-                            if let Some(stack) = stack {
-                                err.set(PredefinedAtom::Stack, stack).unwrap();
-                            }
-                        }
-                        Vm::print_error_and_exit(&ctx, CaughtError::Exception(err));
-                    } else {
-                        Vm::print_error_and_exit(&ctx, err);
-                    }
-                },
-            }
-        });
-        Ok(join_channel_rx)
-    }
 }

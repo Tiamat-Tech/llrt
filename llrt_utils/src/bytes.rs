@@ -28,6 +28,9 @@ pub fn get_bytes_offset_length<'js>(
     offset: usize,
     length: Option<usize>,
 ) -> Result<Vec<u8>> {
+    if value.is_undefined() {
+        return Ok(vec![]);
+    }
     if let Some(bytes) = get_string_bytes(&value, offset, length)? {
         return Ok(bytes);
     }
@@ -39,7 +42,7 @@ pub fn get_bytes_offset_length<'js>(
         if let Some((array_buffer, source_length, source_offset)) = obj_to_array_buffer(obj)? {
             let (start, end) = get_start_end_indexes(source_length, length, offset);
             let bytes: &[u8] = array_buffer.as_ref();
-            return Ok(bytes[start + source_offset..end - source_offset].to_vec());
+            return Ok(bytes[(start + source_offset)..(end + source_offset)].to_vec());
         }
     }
 

@@ -1,13 +1,33 @@
 declare module "buffer" {
   export type BufferEncoding =
-    | "utf8"
-    | "utf-8"
-    | "utf16le"
-    | "utf-16le"
+    | "hex"
     | "base64"
-    | "iso88591"
+    | "utf-8"
+    | "utf8"
+    | "unicode-1-1-utf8"
+    | "utf-16le"
+    | "utf16le"
+    | "utf-16"
+    | "utf16"
+    | "utf-16be"
+    | "utf16be"
+    | "windows-1252"
+    | "ansi_x3.4-1968"
+    | "ascii"
+    | "cp1252"
+    | "cp819"
+    | "csisolatin1"
+    | "ibm819"
     | "iso-8859-1"
-    | "hex";
+    | "iso-ir-100"
+    | "iso8859-1"
+    | "iso88591"
+    | "iso_8859-1"
+    | "iso_8859-1:1987"
+    | "l1"
+    | "latin1"
+    | "us-ascii"
+    | "x-cp1252";
   type WithImplicitCoercion<T> =
     | T
     | {
@@ -91,7 +111,7 @@ declare module "buffer" {
      * truncated to `totalLength`.
      *
      * ```js
-     * import { Buffer } from 'node:buffer';
+     * import { Buffer } from 'buffer';
      *
      * // Create a single `Buffer` from a list of three `Buffer` instances.
      *
@@ -131,7 +151,7 @@ declare module "buffer" {
      * If `fill` is specified, the allocated `Buffer` will be initialized by calling `buf.fill(fill)`.
      *
      * ```js
-     * import { Buffer } from 'node:buffer';
+     * import { Buffer } from 'buffer';
      *
      * const buf = Buffer.alloc(5, 'a');
      *
@@ -164,5 +184,27 @@ declare module "buffer" {
   interface Buffer extends Uint8Array {}
   var Buffer: BufferConstructor;
 
-  export { Buffer };
+  /**
+   * Decodes a string of Base64-encoded data into bytes, and encodes those bytes
+   * into a string using UTF-8.
+   *
+   * The `data` may be any JavaScript-value that can be coerced into a string.
+   *
+   * @legacy Use `Buffer.from(data, 'base64')` instead.
+   * @param data The Base64-encoded input string.
+   */
+  function atob(data: string): string;
+
+  /**
+   * Decodes a string into bytes using UTF-8, and encodes those bytes
+   * into a string using Base64.
+   *
+   * The `data` may be any JavaScript-value that can be coerced into a string.
+   *
+   * @legacy Use `buf.toString('base64')` instead.
+   * @param data An ASCII (Latin1) string.
+   */
+  function btoa(data: string): string;
+
+  export { Buffer, atob, btoa };
 }
